@@ -23,6 +23,7 @@ var (
 		constant.Poloniex:   api.NewPoloniex,
 		constant.OkexFuture: api.NewOkexFuture,
 		constant.BigOne:     api.NewBigOne,
+		constant.Spiral: api.NewSpiral,
 	}
 )
 

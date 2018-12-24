@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/phonegapX/QuantBot/api/SpiralAPI/models"
 	"github.com/phonegapX/QuantBot/api/SpiralAPI/services"
+	"math"
 	"strings"
 	"time"
 
@@ -56,13 +57,13 @@ func NewSpiral(opt Option) Exchange {
 			"W":   "10080",
 		},
 		minAmountMap: map[string]float64{
-			"BTC/USDT": 0.001,
-			"ETH/USDT": 0.001,
+			"BTC/USDT": 0.000001,
+			"ETH/USDT": 0.00001,
 			"ETH/BTC":  0.001,
-			//"BCH/USDT":  0.001, //TODO
-			//"LTC/USDT":  0.001,
-			//"BCH/BTC":  0.001,
-			//"LTC/BTC":  0.001,
+			"BCH/USDT": 0.00001,
+			"LTC/USDT": 0.00001,
+			"BCH/BTC":  0.001,
+			"LTC/BTC":  0.001,
 		},
 		records: make(map[string][]Record),
 		logger:  model.Logger{TraderID: opt.TraderID, ExchangeType: opt.Type},
@@ -138,6 +139,12 @@ func (e *Spiral) Trade(tradeType string, stockType string, _price, _amount inter
 	tradeType = strings.ToUpper(tradeType)
 	price := conver.Float64Must(_price)
 	amount := conver.Float64Must(_amount)
+	if amount < e.minAmountMap[stockType] {
+		e.logger.Log(constant.ERROR, stockType, price, amount, "min trade amount is", e.minAmountMap[stockType])
+	} else if mod := math.Mod(amount, e.minAmountMap[stockType]); mod != 0 {
+		e.logger.Log(constant.INFO, stockType, price, amount, "adjust trade amount to match minimum trade amount", amount-mod)
+		amount = amount - mod
+	}
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, stockType, 0.0, 0.0, "Trade() error, unrecognized stockType: ", stockType)
 		return false

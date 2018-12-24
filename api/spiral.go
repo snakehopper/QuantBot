@@ -139,7 +139,7 @@ func (e *Spiral) Trade(tradeType string, stockType string, _price, _amount inter
 	price := conver.Float64Must(_price)
 	amount := conver.Float64Must(_amount)
 	if _, ok := e.stockTypeMap[stockType]; !ok {
-		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, unrecognized stockType: ", stockType)
+		e.logger.Log(constant.ERROR, stockType, 0.0, 0.0, "Trade() error, unrecognized stockType: ", stockType)
 		return false
 	}
 	switch tradeType {
@@ -148,7 +148,7 @@ func (e *Spiral) Trade(tradeType string, stockType string, _price, _amount inter
 	case constant.TradeTypeSell:
 		return e.sell(stockType, price, amount, msgs...)
 	default:
-		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, unrecognized tradeType: ", tradeType)
+		e.logger.Log(constant.ERROR, stockType, 0.0, 0.0, "Trade() error, unrecognized tradeType: ", tradeType)
 		return false
 	}
 }
@@ -162,12 +162,12 @@ func (e *Spiral) buy(stockType string, price, amount float64, msgs ...interface{
 		result, err = services.LimitBuy(amount, price, e.stockTypeMap[stockType])
 	}
 	if err != nil {
-		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Buy() error, ", err)
+		e.logger.Log(constant.ERROR, stockType, price, amount, "Buy() error, ", err)
 		return false
 	}
 	orderId := result.Order.Id
 	if orderId <= 0 {
-		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Buy() error, ", result.ErrorCode, result.Message)
+		e.logger.Log(constant.ERROR, stockType, price, amount, "Buy() errorCode, ", result.ErrorCode, result.Message)
 		return false
 	}
 	e.logger.Log(constant.BUY, stockType, price, amount, msgs...)
@@ -183,12 +183,12 @@ func (e *Spiral) sell(stockType string, price, amount float64, msgs ...interface
 		result, err = services.LimitSell(amount, price, e.stockTypeMap[stockType])
 	}
 	if err != nil {
-		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Sell() error, ", err)
+		e.logger.Log(constant.ERROR, stockType, price, amount, "Sell() error, ", err)
 		return false
 	}
 	orderId := result.Order.Id
 	if orderId <= 0 {
-		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Buy() error, ", result.ErrorCode, result.Message)
+		e.logger.Log(constant.ERROR, stockType, price, amount, "sell() errorCode, ", result.ErrorCode, result.Message)
 		return false
 	}
 	e.logger.Log(constant.SELL, stockType, price, amount, msgs...)
@@ -218,16 +218,16 @@ func (e *Spiral) GetOrder(stockType, id string) interface{} {
 func (e *Spiral) GetOrders(stockType string) interface{} {
 	stockType = strings.ToUpper(stockType)
 	if _, ok := e.stockTypeMap[stockType]; !ok {
-		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetOrders() error, unrecognized stockType: ", stockType)
+		e.logger.Log(constant.ERROR, stockType, 0.0, 0.0, "GetOrders() error, unrecognized stockType: ", stockType)
 		return false
 	}
 	result, err := services.GetOrders(e.stockTypeMap[stockType], nil)
 	if err != nil {
-		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetOrders() error, ", err)
+		e.logger.Log(constant.ERROR, stockType, 0.0, 0.0, "GetOrders() error, ", err)
 		return false
 	}
 	if result.ErrorCode != 0 {
-		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetOrders() error, ", result.ErrorCode, result.Message)
+		e.logger.Log(constant.ERROR, stockType, 0.0, 0.0, "GetOrders() errorCode, ", result.ErrorCode, result.Message)
 		return false
 	}
 	orders := []Order{}
@@ -249,16 +249,16 @@ func (e *Spiral) GetOrders(stockType string) interface{} {
 func (e *Spiral) GetTrades(stockType string) interface{} {
 	stockType = strings.ToUpper(stockType)
 	if _, ok := e.stockTypeMap[stockType]; !ok {
-		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetTrades() error, unrecognized stockType: ", stockType)
+		e.logger.Log(constant.ERROR, stockType, 0.0, 0.0, "GetTrades() error, unrecognized stockType: ", stockType)
 		return false
 	}
 	result, err := services.GetTrades(e.stockTypeMap[stockType])
 	if err != nil {
-		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetTrades() error, ", err)
+		e.logger.Log(constant.ERROR, stockType, 0.0, 0.0, "GetTrades() error, ", err)
 		return false
 	}
 	if result.ErrorCode != 0 {
-		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetTrades() error, ", result.ErrorCode, result.Message)
+		e.logger.Log(constant.ERROR, stockType, 0.0, 0.0, "GetTrades() errorCode, ", result.ErrorCode, result.Message)
 		return false
 	}
 	orders := []Order{}
@@ -348,7 +348,7 @@ func reverseSlice(a []OrderBook) {
 func (e *Spiral) GetTicker(stockType string, sizes ...interface{}) interface{} {
 	ticker, err := e.getTicker(stockType, sizes...)
 	if err != nil {
-		e.logger.Log(constant.ERROR, "", 0.0, 0.0, err)
+		e.logger.Log(constant.ERROR, stockType, 0.0, 0.0, err)
 		return false
 	}
 	return ticker
@@ -362,7 +362,7 @@ func (e *Spiral) GetRecords(stockType, period string, sizes ...interface{}) inte
 	}
 	res, err := e.getCandleStick(stockType, period, count)
 	if err != nil {
-		e.logger.Log(constant.ERROR, "", 0.0, 0.0, err)
+		e.logger.Log(constant.ERROR, stockType, 0.0, 0.0, err)
 		return false
 	}
 	return res

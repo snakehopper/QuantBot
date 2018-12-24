@@ -17,16 +17,18 @@ import (
 // strPeriod: K线类型, 1, 5, 15......
 // nSize: 获取数量, [1-500]
 // return: KLineReturn 对象
-func GetKLine(strSymbol, strPeriod string, nSize int) (r models.KLineReturn, err error) {
+func GetKLine(strSymbol, strPeriod string, nSize int64) (r models.KLineReturn, err error) {
 	mapParams := make(map[string]string)
 	mapParams["symbol"] = strSymbol
 	mapParams["period"] = strPeriod
-	//mapParams["limit"] = strconv.Itoa(nSize)
+	mapParams["limit"] = fmt.Sprint(nSize)
 
 	url := "/api/v1/klines"
 
 	jsonKLineReturn := untils.HttpGetRequest(url, mapParams)
-	err = json.Unmarshal([]byte(jsonKLineReturn), &r)
+	if err = json.Unmarshal([]byte(jsonKLineReturn), &r); err != nil {
+		fmt.Println(jsonKLineReturn, err)
+	}
 
 	return
 }
@@ -52,7 +54,9 @@ func GetMarketDepth(strSymbol, strType string) (r models.MarketDepthReturn, err 
 	url := "/api/v1/orderbook"
 
 	jsonMarketDepthReturn := untils.HttpGetRequest(url, mapParams)
-	err = json.Unmarshal([]byte(jsonMarketDepthReturn), &r)
+	if err = json.Unmarshal([]byte(jsonMarketDepthReturn), &r); err != nil {
+		fmt.Println(jsonMarketDepthReturn, err)
+	}
 
 	return
 }
@@ -72,7 +76,9 @@ func GetTrades(strSymbol string) (r models.TradesReturn, err error) {
 	url := "/api/v1/trades"
 
 	jsonTradeDetailReturn := untils.HttpGetRequest(url, mapParams)
-	err = json.Unmarshal([]byte(jsonTradeDetailReturn), &r)
+	if err = json.Unmarshal([]byte(jsonTradeDetailReturn), &r); err != nil {
+		fmt.Println(jsonTradeDetailReturn, err)
+	}
 
 	return
 }
@@ -95,7 +101,9 @@ func GetSymbols() (r models.SymbolsReturn, err error) {
 	url := "/api/v1/products"
 
 	jsonCurrencysReturn := untils.HttpGetRequest(url, nil)
-	err = json.Unmarshal([]byte(jsonCurrencysReturn), &r)
+	if err = json.Unmarshal([]byte(jsonCurrencysReturn), &r); err != nil {
+		fmt.Println(jsonCurrencysReturn, err)
+	}
 
 	return
 }
@@ -106,7 +114,9 @@ func GetCurrencys() (r models.CurrencysReturn, err error) {
 	url := "/api/v1/currencies"
 
 	jsonCurrencysReturn := untils.HttpGetRequest(url, nil)
-	err = json.Unmarshal([]byte(jsonCurrencysReturn), &r)
+	if err = json.Unmarshal([]byte(jsonCurrencysReturn), &r); err != nil {
+		fmt.Println(jsonCurrencysReturn, err)
+	}
 
 	return
 }
@@ -136,7 +146,9 @@ func GetAccountBalance(curr string) (r models.BalanceReturn, err error) {
 	url := "/api/v1/wallet/balances"
 
 	jsonBanlanceReturn := untils.HttpGetRequest(url, mapParams)
-	err = json.Unmarshal([]byte(jsonBanlanceReturn), &r)
+	if err = json.Unmarshal([]byte(jsonBanlanceReturn), &r); err != nil {
+		fmt.Println(jsonBanlanceReturn, err)
+	}
 
 	return
 }
@@ -150,8 +162,10 @@ func GetAccountBalance(curr string) (r models.BalanceReturn, err error) {
 func Place(params models.PlaceRequestParams) (r models.PlaceReturn, err error) {
 	strRequest := "/api/v1/order"
 
-	jsonPlaceReturn := untils.HttpPostRequest(strRequest, &params)
-	err = json.Unmarshal([]byte(jsonPlaceReturn), &r)
+	jsonPlaceReturn := untils.HttpPostRequest(strRequest, nil, &params)
+	if err = json.Unmarshal([]byte(jsonPlaceReturn), &r); err != nil {
+		fmt.Println(jsonPlaceReturn, err)
+	}
 
 	return
 }
@@ -206,17 +220,22 @@ func LimitSell(amount, price float64, symbol string) (models.PlaceReturn, error)
 // strOrderID: 订单ID
 // return: PlaceReturn对象
 func SubmitCancel(strOrderID string) (r models.PlaceReturn, err error) {
-	path := fmt.Sprintf("/api/v1/order?order_id=%s", strOrderID)
-
-	jsonPlaceReturn := untils.HttpDeleteRequest(path)
+	params := map[string]string{
+		"order_id": strOrderID,
+	}
+	jsonPlaceReturn := untils.HttpDeleteRequest("/api/v1/order", params)
 	err = json.Unmarshal([]byte(jsonPlaceReturn), &r)
-
+	if err != nil {
+		fmt.Println(jsonPlaceReturn, err)
+	}
 	return
 }
 
 func SubmitCancelAll() (r models.PlaceReturn, err error) {
-	jsonPlaceReturn := untils.HttpDeleteRequest("/api/v1/order/all")
-	err = json.Unmarshal([]byte(jsonPlaceReturn), &r)
+	jsonPlaceReturn := untils.HttpDeleteRequest("/api/v1/order/all", nil)
+	if err = json.Unmarshal([]byte(jsonPlaceReturn), &r); err != nil {
+		fmt.Println(jsonPlaceReturn, err)
+	}
 
 	return
 }
@@ -233,7 +252,9 @@ func GetMyTrades(strSymbol string) (r models.TradesReturn, err error) {
 	strRequest := "/api/v1/myTrades"
 
 	jsonOrdersReturn := untils.HttpGetRequest(strRequest, mapParams)
-	err = json.Unmarshal([]byte(jsonOrdersReturn), &r)
+	if err = json.Unmarshal([]byte(jsonOrdersReturn), &r); err != nil {
+		fmt.Println(jsonOrdersReturn, err)
+	}
 
 	return
 }
@@ -242,7 +263,7 @@ func GetOrders(strSymbol string, side *models.Side) (r models.OrdersReturn, err 
 	mapParams := make(map[string]string)
 	//mapParams["clt_ord_id"] = "clt_ord_id"
 	mapParams["symbol"] = strSymbol
-	mapParams["count"] = "100" //1~1000
+	mapParams["count"] = "1000" //1~1000
 	if side != nil {
 		mapParams["side"] = string(*side)
 	}
@@ -258,7 +279,9 @@ func GetOrders(strSymbol string, side *models.Side) (r models.OrdersReturn, err 
 
 	jsonOrdersReturn := untils.HttpGetRequest(strRequest, mapParams)
 
-	err = json.Unmarshal([]byte(jsonOrdersReturn), &r)
+	if err = json.Unmarshal([]byte(jsonOrdersReturn), &r); err != nil {
+		fmt.Println(jsonOrdersReturn, err)
+	}
 
 	return
 }

@@ -38,7 +38,7 @@ func NewSpiral(opt Option) Exchange {
 			"ETH/USDT": "ETHUSDT",
 			"ETH/BTC":  "ETHBTC",
 			//"BCH/USDT": "BCHUSDT", //TODO
-			//"LTC/USDT": "LTCUSDT", //TODO
+			"LTC/USDT": "LTCUSDT", //TODO
 			//"BCH/BTC": "BCHBTC", //TODO
 			//"LTC/BTC": "LTCBTC", //TODO
 		},
@@ -197,7 +197,21 @@ func (e *Spiral) sell(stockType string, price, amount float64, msgs ...interface
 
 // GetOrder get details of an order
 func (e *Spiral) GetOrder(stockType, id string) interface{} {
-	panic("not implement")
+	fmt.Println("GetOrder", stockType, id)
+	res := e.GetOrders(stockType)
+	switch res.(type) {
+	case bool:
+		return false
+	default:
+		ods := res.([]Order)
+		fmt.Println("orders", ods)
+		for _, od := range ods {
+			if od.ID == id {
+				return od
+			}
+		}
+	}
+	panic("unreachable")
 }
 
 // GetOrders get all unfilled orders
@@ -221,9 +235,9 @@ func (e *Spiral) GetOrders(stockType string) interface{} {
 	for i := 0; i < count; i++ {
 		orders = append(orders, Order{
 			ID:         fmt.Sprint(result.Orders[i].Id),
-			Price:      result.Orders[i].Price,
+			Price:      result.Orders[i].FilledPrice,
 			Amount:     result.Orders[i].Quantity,
-			DealAmount: result.Orders[i].Quantity,
+			DealAmount: result.Orders[i].FilledQuantity,
 			TradeType:  e.tradeTypeMap[string(result.Orders[i].Side)],
 			StockType:  stockType,
 		})
@@ -271,7 +285,7 @@ func (e *Spiral) CancelOrder(order Order) bool {
 		return false
 	}
 	if result.ErrorCode != 0 {
-		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "CancelOrder() error, ", result.ErrorCode, result.Message)
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "CancelOrder() with errorCode, ", result.ErrorCode, result.Message)
 		return false
 	}
 	e.logger.Log(constant.CANCEL, order.StockType, order.Price, order.Amount-order.DealAmount, order)
@@ -310,6 +324,9 @@ func (e *Spiral) getTicker(stockType string, sizes ...interface{}) (ticker Ticke
 			})
 		}
 	}
+	//rearrange bid array to make arr[0] is best deal price
+	reverseSlice(ticker.Bids)
+
 	if len(ticker.Bids) < 1 || len(ticker.Asks) < 1 {
 		err = fmt.Errorf("GetTicker() error, can not get enough Bids or Asks")
 		return
@@ -318,6 +335,13 @@ func (e *Spiral) getTicker(stockType string, sizes ...interface{}) (ticker Ticke
 	ticker.Sell = ticker.Asks[0].Price
 	ticker.Mid = (ticker.Buy + ticker.Sell) / 2
 	return
+}
+
+func reverseSlice(a []OrderBook) {
+	for i := len(a)/2 - 1; i >= 0; i-- {
+		opp := len(a) - 1 - i
+		a[i], a[opp] = a[opp], a[i]
+	}
 }
 
 // GetTicker get market ticker & depth
@@ -332,7 +356,11 @@ func (e *Spiral) GetTicker(stockType string, sizes ...interface{}) interface{} {
 
 // GetRecords get candlestick data
 func (e *Spiral) GetRecords(stockType, period string, sizes ...interface{}) interface{} {
-	res, err := e.getCandleStick(stockType, period)
+	var count int64
+	if len(sizes) == 1 {
+		count = sizes[0].(int64)
+	}
+	res, err := e.getCandleStick(stockType, period, count)
 	if err != nil {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, err)
 		return false
@@ -340,13 +368,17 @@ func (e *Spiral) GetRecords(stockType, period string, sizes ...interface{}) inte
 	return res
 }
 
-func (e *Spiral) getCandleStick(stockType, period string, sizes ...interface{}) (records []Record, err error) {
+func (e *Spiral) getCandleStick(stockType, period string, sizes int64) (records []Record, err error) {
 	stockType = strings.ToUpper(stockType)
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		err = fmt.Errorf("getCandleStick() error, unrecognized stockType: %+v", stockType)
 		return
 	}
-	result, err := services.GetKLine(e.stockTypeMap[stockType], e.recordsPeriodMap[period], 0)
+	var nSize = int64(500)
+	if sizes > 0 {
+		nSize = sizes
+	}
+	result, err := services.GetKLine(e.stockTypeMap[stockType], e.recordsPeriodMap[period], nSize)
 	if err != nil {
 		err = fmt.Errorf("getCandleStick() error, %+v", err)
 		return

@@ -38,10 +38,10 @@ func NewSpiral(opt Option) Exchange {
 			"BTC/USDT": "BTCUSDT",
 			"ETH/USDT": "ETHUSDT",
 			"ETH/BTC":  "ETHBTC",
-			//"BCH/USDT": "BCHUSDT", //TODO
-			"LTC/USDT": "LTCUSDT", //TODO
-			//"BCH/BTC": "BCHBTC", //TODO
-			//"LTC/BTC": "LTCBTC", //TODO
+			"BCH/USDT": "BCHUSDT",
+			"LTC/USDT": "LTCUSDT",
+			"BCH/BTC":  "BCHBTC",
+			"LTC/BTC":  "LTCBTC",
 		},
 		tradeTypeMap: map[string]string{
 			"bid": constant.TradeTypeBuy,
@@ -141,7 +141,7 @@ func (e *Spiral) Trade(tradeType string, stockType string, _price, _amount inter
 	amount := conver.Float64Must(_amount)
 	if amount < e.minAmountMap[stockType] {
 		e.logger.Log(constant.ERROR, stockType, price, amount, "min trade amount is", e.minAmountMap[stockType])
-	} else if mod := math.Mod(amount, e.minAmountMap[stockType]); mod != 0 {
+	} else if mod := math.Mod(amount, e.minAmountMap[stockType]); mod < e.minAmountMap[stockType] {
 		e.logger.Log(constant.INFO, stockType, price, amount, "adjust trade amount to match minimum trade amount", amount-mod)
 		amount = amount - mod
 	}
